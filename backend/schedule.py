@@ -1,5 +1,22 @@
+class Professor:
+    def __init__(self, id: int, name: str):
+        self.id = id
+        self.name = name
+
+    def __str__(self):
+        return self.name
+
+
 class Course:
-    def __init__(self, id, name, semester, hours_per_semester, lecturer, professors):
+    def __init__(
+        self,
+        id: int,
+        name: str,
+        semester: int,
+        hours_per_semester: list,
+        lecturer: Professor,
+        professors: list,
+    ):
         self.id = id
         self.name = name
         self.semester = semester
@@ -10,18 +27,19 @@ class Course:
     def __str__(self):
         return self.name
 
-
-class Instructor:
-    def __init__(self, id, name):
-        self.id = id
-        self.name = name
-
-    def __str__(self):
-        return self.name
+    def create_classes(self) -> list:
+        """
+        Creates a list of classes in this course.
+        """
+        classes = []
+        for i, type in enumerate(["lecture", "practicals", "laboratories"]):
+            if self.hours_per_semester[i] != 0:
+                classes.append(Class(i, self, type))
+        return classes
 
 
 class MeetingTime:
-    def __init__(self, day, hour):
+    def __init__(self, day: int, hour: int):
         self.day = day
         self.hour = hour
 
@@ -30,7 +48,7 @@ class MeetingTime:
 
 
 class Students:
-    def __init__(self, semester, group):
+    def __init__(self, semester: int, group: int):
         self.semester = semester
         self.group = group
 
@@ -39,7 +57,7 @@ class Students:
 
 
 class Room:
-    def __init__(self, name, capacity, category):
+    def __init__(self, name: str, capacity: str, category: str):
         self.name = name
         self.category = category  # category "normal" -- normal classes; category "lab" -- laboratories
         self.seating_capacity = capacity
@@ -49,37 +67,57 @@ class Room:
 
 
 class Class:
-    def __init__(self, id, course, category):
+    def __init__(self, id: int, course: Course, category: str):
         self.id = id
         self.course = course
         self.category = category
-        self.instructor = None
+        self.professor = None
         self.meeting_time = None
         self.room = None
         if category == "lecture":
             self.hours_per_semester = self.course.hours_per_semester[0]
+            self.professor = course.lecturer
         elif category == "practicals":
             self.hours_per_semester = self.course.hours_per_semester[1]
         elif category == "laboratories":
             self.hours_per_semester = self.course.hours_per_semester[2]
 
-    def set_instructor(self, instructor):
-        self.instructor = instructor
+    def set_professor(self, professor: Professor):
+        self.instructor = professor
 
-    def set_meeting_time(self, day, hour):
+    def set_meeting_time(self, day: int, hour: int):
         self.meeting_time = MeetingTime(day, hour)
 
-    def set_room(self, room):
+    def set_room(self, room: Room):
         self.room = room
 
     def __str__(self):
         return (
             str(self.course)
+            + ", "
+            + str(self.category)
+            + ", "
             + str(self.room)
-            + str(self.instructor)
+            + ", "
+            + str(self.professor)
+            + ", "
             + str(self.meeting_time)
+            + ", "
         )
 
 
 class Schedule:
-    """ """
+    def __init__(self):
+        self.data = None
+        self.classes = []
+        self.number_of_conflicts = 0
+        self.fitness = -1
+
+    def get_classes(self):
+        return self.classes
+
+    def get_number_of_conflicts(self):
+        return self.number_of_conflicts
+
+    def initialize(self):
+        """ """
