@@ -1,3 +1,30 @@
+import pandas as pd
+
+
+class Data:
+    def __init__(self, filename: str):
+        self.data = pd.read_excel(f"./{filename}")
+
+    def create_courses(self):
+        courses = []
+        for i in range(len(self.data)):
+            courses.append(
+                Course(
+                    i,
+                    str(self.data.iloc[i]["nazwa_przedmiotu"]),
+                    self.data.iloc[i]["semestr"],
+                    [
+                        self.data.iloc[i]["W"],
+                        self.data.iloc[i]["Ć"],
+                        self.data.iloc[i]["L"],
+                    ],
+                    None,   # None, bo chyba lepiej najpierw wczytać samych profesorów żeby nie było problemu z ID
+                    None,
+                )
+            )
+        return courses
+
+
 class Professor:
     def __init__(self, id: int, name: str):
         self.id = id
@@ -35,6 +62,8 @@ class Course:
         for i, type in enumerate(["lecture", "practicals", "laboratories"]):
             if self.hours_per_semester[i] != 0:
                 classes.append(Class(i, self, type))
+            else:
+                classes.append(None)
         return classes
 
 
