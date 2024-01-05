@@ -55,6 +55,7 @@ class Course:
         return self.name
 
     def create_classes(self) -> list:
+        # do poprawienia -- problem z różnymi id
         """
         Creates a list of classes in this course.
         """
