@@ -40,17 +40,12 @@ class Course:
         for i, type in enumerate(["lecture", "practicals", "laboratories"]):
             hours = self.hours_per_semester[i]
             if hours != 0:
-                k = hours//30
+                k = hours // 30
                 for i in range(k):
-                    classes.append(
-                        Class(
-                            f'{self.name}_{type}_{i+1}',
-                            self,
-                            type
-                            )
-                        )
+                    classes.append(Class(f"{self.name}_{type}_{i+1}", self, type))
 
         return classes
+
 
 class Data:
     def __init__(self, filename: str):
@@ -73,18 +68,13 @@ class Data:
         names_list = list(professors_names)
 
         for prof_name in names_list:
-            professors.append(
-                Professor(
-                    names_list.index(prof_name),
-                    prof_name
-                )
-            )
+            professors.append(Professor(names_list.index(prof_name), prof_name))
 
         return professors
 
     def create_courses(self, professors: list[Professor]) -> list[Course]:
         """Create list of Courses from loaded data
-        
+
         --------
         Should be used after create_professors
         """
@@ -119,7 +109,6 @@ class Data:
         return courses
 
 
-
 class MeetingTime:
     def __init__(self, day: int, hour: int):
         self.day = day
@@ -150,7 +139,7 @@ class Room:
 
 class Class:
     def __init__(self, name: str, course: Course, category: str):
-        self.name = name # jednak daję imię zamiast ID bo tak chyba wystarczy, a łatwiej rozróżnić zajęcia: Analiza_1_ćwiczenia_1 i Analiza_1_ćwiczenia_2 po nazwie
+        self.name = name  # jednak daję imię zamiast ID bo tak chyba wystarczy, a łatwiej rozróżnić zajęcia: Analiza_1_ćwiczenia_1 i Analiza_1_ćwiczenia_2 po nazwie
         self.course = course
         self.category = category
         self.professor = None
