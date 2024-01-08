@@ -33,7 +33,7 @@ class Course:
         return self.name
 
     def create_classes(self) -> list:
-        # do poprawienia -- problem z różnymi id
+        # do przerzucenia niżej wraz z grupami studentami
         """
         Creates a list of classes in this course.
         """
@@ -56,7 +56,7 @@ class Data:
         """Creates list of professors from loaded data.
 
         --------
-        Column "kierownik_przedmiotu" sholud contain name and surname of single professor
+        Column "kierownik_przedmiotu" should contain name and surname of single professor
         Column "realizatorzy_przedmiotu" should contain lists: ['IMIE NAZWISKO_1', 'IMIE NAZWISKO_2', ...].
         """
         professors = []
@@ -108,6 +108,9 @@ class Data:
             )
 
         return courses
+    
+        # do dodania metoda generująca wszystkie zajęcia z wszystkich kursów
+        # i jeszce dodawanie profesorów do zajęc
 
 
 class MeetingTime:
@@ -123,6 +126,8 @@ class Students:
     def __init__(self, semester: int, group: int):
         self.semester = semester
         self.group = group
+        self.class_assignment = []
+        self.size = 0
 
     def __str__(self):
         return str(self.semester) + str(self.group)
@@ -146,6 +151,7 @@ class Class:
         self.professor = None
         self.meeting_time = None
         self.room = None
+        self.student_groups = [] # list grup dla których prowadzone są te zajęcia
         if category == "lecture":
             self.professor = course.lecturer
         # to co niżej jest w mojej ocenie niepotrzebne:
@@ -184,9 +190,17 @@ class Class:
 
 
 class Schedule:
-    def __init__(self):
-        self.data = None
-        self.classes = []
+    def __init__(self, rooms, students, professors, classes):
+        """
+        08.01.2024
+        -- przechodzimy przez wszystkie zajęcia po kolei i losujemy/wybieramy ich miejsca w planie (tj. Room i MeetingTime)
+        
+        
+        """
+        self.rooms = rooms
+        self.classes = classes
+        self.professors = professors
+        self.students = students
         self.number_of_conflicts = 0
         self.fitness = -1
 
