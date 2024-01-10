@@ -11,6 +11,16 @@ class Professor:
     def __str__(self):
         return self.name
 
+class Students:
+    def __init__(self, semester: int, group: int, subject: str):
+        self.semester = semester
+        self.group = group
+        self.subject = subject
+        self.class_assignment = []
+        self.size = 0
+
+    def __str__(self):
+        return f"Kierunek {self.subject} Semestr {self.semester} Grupa {self.group}"
 
 class Course:
     def __init__(
@@ -18,6 +28,7 @@ class Course:
         id: int,
         name: str,
         semester: int,
+        subject: str,
         hours_per_semester: list,
         lecturer: Professor,
         professors: list[Professor],
@@ -25,6 +36,7 @@ class Course:
         self.id = id
         self.name = name
         self.semester = semester
+        self.subject = subject
         self.hours_per_semester = hours_per_semester
         self.lecturer = lecturer
         self.professors = professors
@@ -32,19 +44,32 @@ class Course:
     def __str__(self):
         return self.name
 
-    def create_classes(self) -> list:
-        # do przerzucenia niżej wraz z grupami studentami
+    def create_classes(self, students: list[Students]) -> list:
         """
-        Creates a list of classes in this course.
+        Creates a list of classes in this course with regard to number of student groups. Assign professors to created classes.
+
+        --------
+        students: list[Students] - a list of student groups assigned to this course
         """
         classes = []
         for i, type in enumerate(["lecture", "practicals", "laboratories"]):
-            hours = self.hours_per_semester[i]
-            if hours != 0:
-                k = hours // 30
-                for i in range(k):
-                    classes.append(Class(f"{self.name}_{type}_{i+1}", self, type))
-
+            if type != "lecture":
+                index = 0
+                for student_grp in students:
+                    index % len(self.professors)
+                    hours = self.hours_per_semester[i]
+                    if hours != 0:
+                        k = hours // 30
+                        for i in range(k):
+                            classes.append(Class(f"{self.name}_{type}_{i+1}_grp_{student_grp.group}", self, type, self.professors[index],[student_grp]))
+                    index += 1
+            else:
+                hours = self.hours_per_semester[i]
+                if hours != 0:
+                    k = hours // 30
+                    for i in range(k):
+                        classes.append(Class(f"{self.name}_{type}_{i+1}", self, type, self.lecturer, students))
+        
         return classes
 
 
@@ -97,6 +122,7 @@ class Data:
                     i,
                     str(self.data.iloc[i]["nazwa_przedmiotu"]).replace(" ", "_"),
                     self.data.iloc[i]["semestr"],
+                    self.data.iloc[i]["kierunek"],
                     [
                         self.data.iloc[i]["W"],
                         self.data.iloc[i]["Ć"],
@@ -108,9 +134,6 @@ class Data:
             )
 
         return courses
-    
-        # do dodania metoda generująca wszystkie zajęcia z wszystkich kursów
-        # i jeszce dodawanie profesorów do zajęc
 
 
 class MeetingTime:
@@ -120,17 +143,6 @@ class MeetingTime:
 
     def __str__(self):
         return f"Day: {self.day}, hour: {self.hour}"
-
-
-class Students:
-    def __init__(self, semester: int, group: int):
-        self.semester = semester
-        self.group = group
-        self.class_assignment = []
-        self.size = 0
-
-    def __str__(self):
-        return str(self.semester) + str(self.group)
 
 
 class Room:
@@ -144,16 +156,14 @@ class Room:
 
 
 class Class:
-    def __init__(self, name: str, course: Course, category: str):
+    def __init__(self, name: str, course: Course, category: str, professor: Professor,student_groups: list[Students]):
         self.name = name  # jednak daję imię zamiast ID bo tak chyba wystarczy, a łatwiej rozróżnić zajęcia: Analiza_1_ćwiczenia_1 i Analiza_1_ćwiczenia_2 po nazwie
         self.course = course
         self.category = category
-        self.professor = None
+        self.professor = professor
         self.meeting_time = None
         self.room = None
-        self.student_groups = [] # list grup dla których prowadzone są te zajęcia
-        if category == "lecture":
-            self.professor = course.lecturer
+        self.student_groups = student_groups # list grup dla których prowadzone są te zajęcia
         # to co niżej jest w mojej ocenie niepotrzebne:
         # -- z perspektywy jednych zajęc, po co dawać godziny w całym semestrze jedne zajęcia to blok 2h w planie czyli 30 godzin w sem.
         # if category == "lecture":
@@ -186,11 +196,12 @@ class Class:
             + ", "
             + str(self.meeting_time)
             + ", "
+            + str(self.student_groups)
         )
 
 
 class Schedule:
-    def __init__(self, rooms, students, professors, classes):
+    def __init__(self, rooms: list[Room], professors: list[Professor], students: list[Students]):
         """
         08.01.2024
         -- przechodzimy przez wszystkie zajęcia po kolei i losujemy/wybieramy ich miejsca w planie (tj. Room i MeetingTime)
@@ -198,9 +209,9 @@ class Schedule:
         
         """
         self.rooms = rooms
-        self.classes = classes
         self.professors = professors
         self.students = students
+        self.classes = []
         self.number_of_conflicts = 0
         self.fitness = -1
 
