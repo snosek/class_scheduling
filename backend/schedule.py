@@ -56,19 +56,19 @@ class Course:
             if type != "lecture":
                 index = 0
                 for student_grp in students:
-                    index % len(self.professors)
+                    index = index % len(self.professors)
                     hours = self.hours_per_semester[i]
                     if hours != 0:
                         k = hours // 30
-                        for i in range(k):
-                            classes.append(Class(f"{self.name}_{type}_{i+1}_grp_{student_grp.group}", self, type, self.professors[index],[student_grp]))
+                        for j in range(k):
+                            classes.append(Class(f"{self.name}_{type}_{j+1}_grp_{student_grp.group}", self, type, self.professors[index],[student_grp]))
                     index += 1
             else:
                 hours = self.hours_per_semester[i]
                 if hours != 0:
                     k = hours // 30
-                    for i in range(k):
-                        classes.append(Class(f"{self.name}_{type}_{i+1}", self, type, self.lecturer, students))
+                    for j in range(k):
+                        classes.append(Class(f"{self.name}_{type}_{j+1}", self, type, self.lecturer, students))
         
         return classes
 
