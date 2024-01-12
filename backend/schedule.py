@@ -1,4 +1,5 @@
 import pandas as pd
+import random as rand
 
 
 class Professor:
@@ -21,6 +22,17 @@ class Students:
 
     def __str__(self):
         return f"Kierunek {self.subject} Semestr {self.semester} Grupa {self.group}"
+
+class Students:
+    def __init__(self, semester: int, group: int, subject: str):
+        self.semester = semester
+        self.group = group
+        self.subject = subject
+        self.class_assignment = []
+
+    def __str__(self):
+        return f"Kierunek {self.subject} Semestr {self.semester} Grupa {self.group}"
+
 
 class Course:
     def __init__(
@@ -61,15 +73,30 @@ class Course:
                     if hours != 0:
                         k = hours // 30
                         for j in range(k):
-                            classes.append(Class(f"{self.name}_{type}_{j+1}_grp_{student_grp.group}", self, type, self.professors[index],[student_grp]))
+                            classes.append(
+                                Class(
+                                    f"{self.name}_{type}_{j+1}_grp_{student_grp.group}",
+                                    self,
+                                    type,
+                                    self.professors[index],
+                                    [student_grp],
+                                )
+                            )
                     index += 1
             else:
                 hours = self.hours_per_semester[i]
                 if hours != 0:
                     k = hours // 30
                     for j in range(k):
-                        classes.append(Class(f"{self.name}_{type}_{j+1}", self, type, self.lecturer, students))
-        
+                        classes.append(
+                            Class(
+                                f"{self.name}_{type}_{j+1}",
+                                self,
+                                type,
+                                self.lecturer,
+                                students,
+                            )
+                        )
         return classes
 
 
@@ -137,7 +164,11 @@ class Data:
 
 
 class MeetingTime:
-    def __init__(self, day: int, hour: int):
+    def __init__(self, day: [0, 1, 2, 3, 4], hour: [0, 1, 2, 3, 4, 5]):
+        """
+        Creates meeting time.
+        "hour" is an integer from 0 to 5, because there's 6 possible slots for a 2–hour class in a day.
+        """
         self.day = day
         self.hour = hour
 
@@ -146,32 +177,35 @@ class MeetingTime:
 
 
 class Room:
-    def __init__(self, name: str, capacity: str, category: str):
+    def __init__(self, name: str, capacity: int, category: str):
         self.name = name
-        self.category = category  # category "normal" -- normal classes; category "lab" -- laboratories
-        self.seating_capacity = capacity
+        self.category = category  # category "normal" - normal classes; category "laboratories" - laboratories
+        self.seating_capacity = (
+            capacity  # 1 means 1 group can fit in; 2 means 2 groups etc.
+        )
 
     def __str__(self):
         return self.name
 
 
 class Class:
-    def __init__(self, name: str, course: Course, category: str, professor: Professor,student_groups: list[Students]):
-        self.name = name  # jednak daję imię zamiast ID bo tak chyba wystarczy, a łatwiej rozróżnić zajęcia: Analiza_1_ćwiczenia_1 i Analiza_1_ćwiczenia_2 po nazwie
+    def __init__(
+        self,
+        name: str,
+        course: Course,
+        category: str,
+        professor: Professor,
+        student_groups: list[Students],
+    ):
+        # jednak daję imię zamiast ID bo tak chyba wystarczy, a łatwiej rozróżnić zajęcia: Analiza_1_ćwiczenia_1 i Analiza_1_ćwiczenia_2 po nazwie
+        self.name = name  
         self.course = course
         self.category = category
         self.professor = professor
         self.meeting_time = None
         self.room = None
-        self.student_groups = student_groups # list grup dla których prowadzone są te zajęcia
-        # to co niżej jest w mojej ocenie niepotrzebne:
-        # -- z perspektywy jednych zajęc, po co dawać godziny w całym semestrze jedne zajęcia to blok 2h w planie czyli 30 godzin w sem.
-        # if category == "lecture":
-        #     self.hours_per_semester = self.course.hours_per_semester[0]
-        # elif category == "practicals":
-        #     self.hours_per_semester = self.course.hours_per_semester[1]
-        # elif category == "laboratories":
-        #     self.hours_per_semester = self.course.hours_per_semester[2]
+        # lista grup dla których prowadzone są te zajęcia
+        self.student_groups = student_groups
 
     def set_professor(self, professor: Professor):
         self.instructor = professor
@@ -186,40 +220,70 @@ class Class:
         return (
             str(self.name)
             + ", "
-            + str(self.course)
-            + ", "
-            + str(self.category)
-            + ", "
             + str(self.room)
             + ", "
             + str(self.professor)
             + ", "
             + str(self.meeting_time)
-            + ", "
-            + str(self.student_groups)
         )
 
 
 class Schedule:
-    def __init__(self, rooms: list[Room], professors: list[Professor], students: list[Students]):
+    def __init__(
+        self,
+        professors: list[Professor],
+        courses: list[Course],
+        rooms: list[Room],
+        students: list[Students],
+    ):
         """
         08.01.2024
         -- przechodzimy przez wszystkie zajęcia po kolei i losujemy/wybieramy ich miejsca w planie (tj. Room i MeetingTime)
-        
-        
         """
         self.rooms = rooms
         self.professors = professors
+        self.courses = courses
         self.students = students
         self.classes = []
+        for course in self.courses:
+            self.classes += course.create_classes(self.students)
         self.number_of_conflicts = 0
         self.fitness = -1
+        self.schedule = []
 
-    def get_classes(self):
-        return self.classes
+    # może warto generować plan oddzielnie dla każdej grupy studenckiej, wtedy możnaby łatwo na tym etapie uniknąć konfliktów w MeetingTime w obrębie jednej grupy
+    def random_schedule(self):
+        rooms_lab = [room for room in self.rooms if room.category == "laboratories"]
+        rooms_normal = [room for room in self.rooms if room.category == "normal"]
+        for student_group in self.students:
+            temp = []
+            group_classes = [item for item in self.classes if student_group in item.student_groups]
+            possible_times = []
+            for day in range(5):
+                for hour in range(6):
+                    possible_times.append([day, hour])
+            rand.shuffle(possible_times)
+            for item in group_classes:
+                meeting_time = possible_times.pop()
+                item.set_meeting_time(meeting_time[0], meeting_time[1])
+                if item.category == "laboratories":
+                    item.set_room(rand.choice(rooms_lab))
+                else:
+                    item.set_room(rand.choice(rooms_normal))
+                temp.append(item)
+            self.schedule.append(temp)
 
-    def get_number_of_conflicts(self):
-        return self.number_of_conflicts
-
-    def initialize(self):
-        """ """
+        """
+    def random_schedule(self):
+        
+        Generates randomized schedule.
+        
+        rooms_lab = [room for room in self.rooms if room.category == "laboratories"]
+        rooms_normal = [room for room in self.rooms if room.category == "normal"]
+        for item in self.classes:
+            item.set_meeting_time(rand.randint(0, 4), rand.randint(0, 5))
+            if item.category == "laboratories":
+                item.set_room(rand.choice(rooms_lab))
+            else:
+                item.set_room(rand.choice(rooms_normal))
+"""
