@@ -12,6 +12,16 @@ class Professor:
     def __str__(self):
         return self.name
 
+class Students:
+    def __init__(self, semester: int, group: int, subject: str):
+        self.semester = semester
+        self.group = group
+        self.subject = subject
+        self.class_assignment = []
+        self.size = 0
+
+    def __str__(self):
+        return f"Kierunek {self.subject} Semestr {self.semester} Grupa {self.group}"
 
 class Students:
     def __init__(self, semester: int, group: int, subject: str):
@@ -87,7 +97,6 @@ class Course:
                                 students,
                             )
                         )
-
         return classes
 
 
