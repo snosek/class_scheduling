@@ -58,14 +58,14 @@ class Course:
             if type != "lecture":
                 index = 0
                 for student_grp in students:
-                    index % len(self.professors)
+                    index = index % len(self.professors)
                     hours = self.hours_per_semester[i]
                     if hours != 0:
                         k = hours // 30
-                        for i in range(k):
+                        for j in range(k):
                             classes.append(
                                 Class(
-                                    f"{self.name}_{type}_{i+1}_grp_{student_grp.group}",
+                                    f"{self.name}_{type}_{j+1}_grp_{student_grp.group}",
                                     self,
                                     type,
                                     self.professors[index],
@@ -77,10 +77,10 @@ class Course:
                 hours = self.hours_per_semester[i]
                 if hours != 0:
                     k = hours // 30
-                    for i in range(k):
+                    for j in range(k):
                         classes.append(
                             Class(
-                                f"{self.name}_{type}_{i+1}",
+                                f"{self.name}_{type}_{j+1}",
                                 self,
                                 type,
                                 self.lecturer,
@@ -188,13 +188,15 @@ class Class:
         professor: Professor,
         student_groups: list[Students],
     ):
-        self.name = name  # jednak daję imię zamiast ID bo tak chyba wystarczy, a łatwiej rozróżnić zajęcia: Analiza_1_ćwiczenia_1 i Analiza_1_ćwiczenia_2 po nazwie
+        # jednak daję imię zamiast ID bo tak chyba wystarczy, a łatwiej rozróżnić zajęcia: Analiza_1_ćwiczenia_1 i Analiza_1_ćwiczenia_2 po nazwie
+        self.name = name  
         self.course = course
         self.category = category
         self.professor = professor
         self.meeting_time = None
         self.room = None
-        self.student_groups = student_groups  # list grup dla których prowadzone są te zajęcia
+        # lista grup dla których prowadzone są te zajęcia
+        self.student_groups = student_groups
 
     def set_professor(self, professor: Professor):
         self.instructor = professor
@@ -238,12 +240,35 @@ class Schedule:
             self.classes += course.create_classes(self.students)
         self.number_of_conflicts = 0
         self.fitness = -1
+        self.schedule = []
 
     # może warto generować plan oddzielnie dla każdej grupy studenckiej, wtedy możnaby łatwo na tym etapie uniknąć konfliktów w MeetingTime w obrębie jednej grupy
     def random_schedule(self):
+        rooms_lab = [room for room in self.rooms if room.category == "laboratories"]
+        rooms_normal = [room for room in self.rooms if room.category == "normal"]
+        for student_group in self.students:
+            temp = []
+            group_classes = [item for item in self.classes if student_group in item.student_groups]
+            possible_times = []
+            for day in range(5):
+                for hour in range(6):
+                    possible_times.append([day, hour])
+            rand.shuffle(possible_times)
+            for item in group_classes:
+                meeting_time = possible_times.pop()
+                item.set_meeting_time(meeting_time[0], meeting_time[1])
+                if item.category == "laboratories":
+                    item.set_room(rand.choice(rooms_lab))
+                else:
+                    item.set_room(rand.choice(rooms_normal))
+                temp.append(item)
+            self.schedule.append(temp)
+
         """
+    def random_schedule(self):
+        
         Generates randomized schedule.
-        """
+        
         rooms_lab = [room for room in self.rooms if room.category == "laboratories"]
         rooms_normal = [room for room in self.rooms if room.category == "normal"]
         for item in self.classes:
@@ -252,3 +277,4 @@ class Schedule:
                 item.set_room(rand.choice(rooms_lab))
             else:
                 item.set_room(rand.choice(rooms_normal))
+"""
