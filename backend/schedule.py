@@ -302,23 +302,23 @@ class Schedule:
                     conflicts += 1
         self.number_of_conflicts = conflicts - len(self.classes)
 
-    def visualize_groups(self) -> None:
+    def visualize_groups(self, file_name: str) -> None:
         """
-        Check if plan_dla_studentow.xlsx already exists. If it does remove it and create a new one, otherwise create a new one.
-        Create an excel spreadsheet containing a schedule for all student groups.
+        Check if file_name.xlsx already exists. If it does remove it and create a new empty one, otherwise create a new empty one.
+        Fill an excel spreadsheet with schedules for all student groups.
         """
-        if os.path.exists("plan_dla_studentow.xlsx"):
-            os.remove("plan_dla_studentow.xlsx")
-            writer = pd.ExcelWriter('plan_dla_studentow.xlsx', engine='xlsxwriter')
+        if os.path.exists(f"{file_name}.xlsx"):
+            os.remove(f"{file_name}.xlsx")
+            writer = pd.ExcelWriter(f"{file_name}.xlsx", engine="xlsxwriter")
             workbook = writer.book
-            worksheet = workbook.add_worksheet('Arkusz_1')
-            worksheet.write(0, 0, ' ')
+            worksheet = workbook.add_worksheet("Arkusz_1")
+            worksheet.write(0, 0, " ")
             writer.close()
         else:
-            writer = pd.ExcelWriter('plan_dla_studentow.xlsx', engine='xlsxwriter')
+            writer = pd.ExcelWriter(f"{file_name}.xlsx", engine="xlsxwriter")
             workbook = writer.book
-            worksheet = workbook.add_worksheet('Arkusz_1')
-            worksheet.write(0, 0, ' ')
+            worksheet = workbook.add_worksheet("Arkusz_1")
+            worksheet.write(0, 0, " ")
             writer.close()
 
         for i, group_plan in enumerate(self.schedule):
@@ -330,7 +330,7 @@ class Schedule:
             # dałem zapisanie do excela bo nie umiem zrobić żeby się ładnie wyświetalało xd
             # jeśli zostajemy przy czymś takim, to można jakoś automatycznie formatować pliki by ładnie wyglądały
             group = self.students[i]
-            with pd.ExcelWriter("plan_dla_studentow.xlsx", mode = "a", engine = "openpyxl") as writer:
+            with pd.ExcelWriter(f"{file_name}.xlsx", mode = "a", engine = "openpyxl") as writer:
                 df.to_excel(writer, sheet_name=f"{group.subject}_{group.semester}_{group.group}")
     
     # def random_schedule(self):
