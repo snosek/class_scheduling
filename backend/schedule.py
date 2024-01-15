@@ -332,17 +332,26 @@ class Schedule:
             group = self.students[i]
             with pd.ExcelWriter(f"{file_name}.xlsx", mode = "a", engine = "openpyxl") as writer:
                 df.to_excel(writer, sheet_name=f"{group.subject}_{group.semester}_{group.group}")
-    
-    # def random_schedule(self):
-        
-    #     Generates randomized schedule.
-        
-    #     rooms_lab = [room for room in self.rooms if room.category == "laboratories"]
-    #     rooms_normal = [room for room in self.rooms if room.category == "normal"]
-    #     for item in self.classes:
-    #         item.set_meeting_time(rand.randint(0, 4), rand.randint(0, 5))
-    #         if item.category == "laboratories":
-    #             item.set_room(rand.choice(rooms_lab))
-    #         else:
-    #             item.set_room(rand.choice(rooms_normal))
+
+
+"""
+Spotkanie 15.01:
+-- Fitness w klasie Schedule 
+
+-- Osobna klasa do algorytmu genetycznego:
+    -- Mutacje (w obrębie całego planu tj. obiektu klasy Schedule): 
+        1. Wybranie losowych "okienek" w planie i zamiana ich miejscami -- UWAGA NA WYKŁADY
+        2. Zamiana całych dni miejscami -- UWAGA NA WYKŁAD
+        3. Zmiana miejsca i godziny jednych zajęć na losowy (inny pokój) w wolnym czasie 
+        4. ...
+    -- Crossovers (w obrębie dwóch obiektów klasy Schedule): 
+        1. Wybieramy zajęcia, zapamiętujemy miejsca w obu planach i zamieniamy te miejsca w obu planach
+        2. Z pierwszego rodzica wybieramy losowo trochę zajęć i wpisujemy je do planu dziecka. Póżniej z planu drugiego rodzica
+            wyrkeślamy wybrane już zajęcia a pozostałe umieszczamy losowo w planie dziecka.
+    -- Selekcja:
+        Zostawienie n najlepszych osobników
+
+-- Dokończenie wizualizacji danych
+
+"""
 
