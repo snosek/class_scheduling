@@ -165,6 +165,9 @@ class MeetingTime:
         self.hour = hour
 
     def generate_possible_times():
+        """
+        Generates a list of possible times in the format [day, hour].
+        """
         possible_times = []
         for day in range(5):
             for hour in range(6):
@@ -255,11 +258,6 @@ class Schedule:
                 ):
                     this_course_students.append(student_group)
             self.classes += course.create_classes(this_course_students)
-        # poniżej trójwymiarowa macierz zajęć w formacie classes_matrix[student_groups.ids][days][hours]
-        # chyba jednak niepotrzebna
-        self.classes_matrix = [
-            [[None for _ in range(6)] for _ in range(5)] for _ in self.students
-        ]
         self.number_of_conflicts = 0
         self.fitness = -1
         self.schedule = []
@@ -309,9 +307,6 @@ class Schedule:
                 else:
                     item.set_room(rand.choice(rooms_normal))
                 temp.append(item)
-                self.classes_matrix[student_group.id][item.meeting_time.day][
-                    item.meeting_time.hour
-                ] = item
             self.schedule.append(temp)
 
     def calculate_and_set_number_of_conflicts(self) -> None:
@@ -331,16 +326,6 @@ class Schedule:
     def calculate_and_set_fitness(self):
         self.calculate_and_set_number_of_conflicts()
         self.fitness = 1.0 / (self.number_of_conflicts + 1)
-
-    # używane w mutacji, bo tak chyba prościej xd
-    # znow, chyba niepotrzebne, ale zobaczymy
-    def update_from_matrix(self):
-        for group in self.classes_matrix:
-            for dayid, day in enumerate(group):
-                for hourid, class_ in enumerate(day):
-                    if class_ is not None:
-                        class_.set_meeting_time(dayid, hourid)
-                        print(class_.meeting_time == MeetingTime(dayid, hourid))
 
     def visualize_groups(self, file_name: str) -> None:
         """
@@ -382,26 +367,17 @@ class Schedule:
 Spotkanie 15.01:
 -- DONE Fitness w klasie Schedule 
 
--- Osobna klasa do algorytmu genetycznego:
+-- DONE Osobna klasa do algorytmu genetycznego:
     -- Mutacje (w obrębie całego planu tj. obiektu klasy Schedule): 
         1. DONE Wybranie losowych "okienek" w planie i zamiana ich miejscami -- UWAGA NA WYKŁADY
-=======
-Spotkanie 15.01:
--- Fitness w klasie Schedule 
-
--- Osobna klasa do algorytmu genetycznego:
-    -- Mutacje (w obrębie całego planu tj. obiektu klasy Schedule): 
-        1. Wybranie losowych "okienek" w planie i zamiana ich miejscami -- UWAGA NA WYKŁADY
->>>>>>> main
         2. Zamiana całych dni miejscami -- UWAGA NA WYKŁAD
         3. Zmiana miejsca i godziny jednych zajęć na losowy (inny pokój) w wolnym czasie 
         4. ...
     -- Crossovers (w obrębie dwóch obiektów klasy Schedule): 
         1. Wybieramy zajęcia, zapamiętujemy miejsca w obu planach i zamieniamy te miejsca w obu planach
-        2. Z pierwszego rodzica wybieramy losowo trochę zajęć i wpisujemy je do planu dziecka. Póżniej z planu drugiego rodzica
-            wyrkeślamy wybrane już zajęcia a pozostałe umieszczamy losowo w planie dziecka.
+        2. Z pierwszego rodzica wybieramy losowo trochę zajęć i wpisujemy je do planu dziecka. Póżniej z planu drugiego rodzica wykreślamy wybrane już zajęcia a pozostałe umieszczamy losowo w planie dziecka.
     -- Selekcja:
-        Zostawienie n najlepszych osobników
+        DONE Zostawienie n najlepszych osobników
 
 -- Dokończenie wizualizacji danych
 """
