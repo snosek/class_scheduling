@@ -13,8 +13,10 @@ class Professor:
     def __str__(self):
         return self.name
 
+
 class Students:
-    def __init__(self, semester: int, group: int, subject: str):
+    def __init__(self, id: int, semester: int, group: int, subject: str):
+        self.id = id
         self.semester = semester
         self.group = group
         self.subject = subject
@@ -162,12 +164,28 @@ class MeetingTime:
         self.day = day
         self.hour = hour
 
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+=======
+    def generate_possible_times():
+        possible_times = []
+        for day in range(5):
+            for hour in range(6):
+                possible_times.append([day, hour])
+        return possible_times
+
+=======
+>>>>>>> main
     def __eq__(self, other) -> bool:
         if other == None:
             return False
         else:
             return self.day == other.day and self.hour == other.hour
 
+<<<<<<< HEAD
+>>>>>>> Stashed changes
+=======
+>>>>>>> main
     def __str__(self):
         return f"Day: {self.day}, hour: {self.hour}"
 
@@ -194,7 +212,7 @@ class Class:
         student_groups: list[Students],
     ):
         # jednak daję imię zamiast ID bo tak chyba wystarczy, a łatwiej rozróżnić zajęcia: Analiza_1_ćwiczenia_1 i Analiza_1_ćwiczenia_2 po nazwie
-        self.name = name  
+        self.name = name
         self.course = course
         self.category = category
         self.professor = professor
@@ -232,66 +250,142 @@ class Schedule:
         rooms: list[Room],
         students: list[Students],
     ):
-        """
-        08.01.2024
-        -- przechodzimy przez wszystkie zajęcia po kolei i losujemy/wybieramy ich miejsca w planie (tj. Room i MeetingTime)
-        """
         self.rooms = rooms
         self.professors = professors
         self.courses = courses
         self.students = students
         self.classes = []
         for course in self.courses:
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+            self.classes += course.create_classes(self.students)
+=======
+            this_course_students = []
+            for student_group in students:
+                if (
+                    student_group.semester == course.semester
+                    and student_group.subject == course.subject
+                ):
+                    this_course_students.append(student_group)
+            self.classes += course.create_classes(this_course_students)
+        # poniżej trójwymiarowa macierz zajęć w formacie classes_matrix[student_groups.ids][days][hours]
+        # chyba jednak niepotrzebna
+        self.classes_matrix = [
+            [[None for _ in range(6)] for _ in range(5)] for _ in self.students
+        ]
+>>>>>>> Stashed changes
+=======
             this_course_students = []
             for student_group in students:
                 if student_group.semester == course.semester and student_group.subject == course.subject:
                     this_course_students.append(student_group)
             self.classes += course.create_classes(this_course_students)
+>>>>>>> main
         self.number_of_conflicts = 0
         self.fitness = -1
         self.schedule = []
 
+<<<<<<< Updated upstream
     # może warto generować plan oddzielnie dla każdej grupy studenckiej, wtedy możnaby łatwo na tym etapie uniknąć konfliktów w MeetingTime w obrębie jednej grupy
+<<<<<<< HEAD
+    def random_schedule(self):
+=======
+=======
+>>>>>>> main
     def random_schedule(self) -> None:
         """
         Generate a random schedule for all groups. Prevents conflicts within groups, may generate conflicts for rooms and professors
         """
+<<<<<<< HEAD
+>>>>>>> Stashed changes
+=======
+>>>>>>> main
         rooms_lab = [room for room in self.rooms if room.category == "laboratories"]
         rooms_normal = [room for room in self.rooms if room.category == "normal"]
         for student_group in self.students:
             temp = []
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+            group_classes = [item for item in self.classes if student_group in item.student_groups]
+=======
             group_classes = [item for item in self.classes if (student_group in item.student_groups) and item.category != "lecture"]
             group_lectures = [item for item in self.classes if (student_group in item.student_groups) and item.category == "lecture"]
+>>>>>>> main
             possible_times = []
             for day in range(5):
                 for hour in range(6):
                     possible_times.append([day, hour])
             rand.shuffle(possible_times)
+<<<<<<< HEAD
+=======
+            group_classes = [
+                item
+                for item in self.classes
+                if (student_group in item.student_groups) and item.category != "lecture"
+            ]
+            group_lectures = [
+                item
+                for item in self.classes
+                if (student_group in item.student_groups) and item.category == "lecture"
+            ]
+            possible_times = MeetingTime.generate_possible_times()
+            rand.shuffle(possible_times)
+=======
+>>>>>>> main
 
             # najpierw wykłady by zapobiec "przekładaniu" zajęć na inne miejsce w kolejnych losowaniach dla grup
             for item in group_lectures:
                 if item.meeting_time == None:
+<<<<<<< HEAD
+                    drawed_meeting_time = possible_times.pop()
+                    item.set_meeting_time(
+                        drawed_meeting_time[0], drawed_meeting_time[1]
+                    )
+=======
                     meeting_time = possible_times.pop()
                     item.set_meeting_time(meeting_time[0], meeting_time[1])
+>>>>>>> main
                     if item.category == "laboratories":
                         item.set_room(rand.choice(rooms_lab))
                     else:
                         item.set_room(rand.choice(rooms_normal))
                 else:
+<<<<<<< HEAD
+                    possible_times.remove(
+                        [item.meeting_time.day, item.meeting_time.hour]
+                    )
+                temp.append(item)
+                # ponizej raczej niepotrzebne
+                for id in [group.id for group in item.student_groups]:
+                    self.classes_matrix[id][item.meeting_time.day][
+                        item.meeting_time.hour
+                    ] = item
+
+>>>>>>> Stashed changes
+=======
                     possible_times.remove([item.meeting_time.day, item.meeting_time.hour])
                 temp.append(item)
 
+>>>>>>> main
             for item in group_classes:
-                meeting_time = possible_times.pop()
-                item.set_meeting_time(meeting_time[0], meeting_time[1])
+                drawed_meeting_time = possible_times.pop()
+                item.set_meeting_time(drawed_meeting_time[0], drawed_meeting_time[1])
                 if item.category == "laboratories":
                     item.set_room(rand.choice(rooms_lab))
                 else:
                     item.set_room(rand.choice(rooms_normal))
                 temp.append(item)
+                self.classes_matrix[student_group.id][item.meeting_time.day][
+                    item.meeting_time.hour
+                ] = item
             self.schedule.append(temp)
+<<<<<<< HEAD
+<<<<<<< Updated upstream
+
+=======
     
     def calculate_and_set_number_of_conflicts(self) -> None:
+>>>>>>> main
         """
         Calculate number of conflicts in this schedule. Set number_of_conflicts attribute as calculated value.
         """
@@ -335,12 +429,88 @@ class Schedule:
 
 
 """
+<<<<<<< HEAD
+=======
+
+    def calculate_and_set_number_of_conflicts(self) -> None:
+        """
+        Calculate number of conflicts in this schedule. Set number_of_conflicts attribute as calculated value.
+        """
+        conflicts = 0
+        for class_1 in self.classes:
+            for class_2 in self.classes:
+                if (
+                    class_1.professor == class_2.professor
+                    or class_1.room == class_2.room
+                ) and class_1.meeting_time == class_2.meeting_time:
+                    conflicts += 1
+        self.number_of_conflicts = conflicts - len(self.classes)
+
+    def calculate_and_set_fitness(self):
+        self.calculate_and_set_number_of_conflicts()
+        self.fitness = 1.0 / (self.number_of_conflicts + 1)
+
+    # używane w mutacji, bo tak chyba prościej xd
+    # znow, chyba niepotrzebne, ale zobaczymy
+    def update_from_matrix(self):
+        for group in self.classes_matrix:
+            for dayid, day in enumerate(group):
+                for hourid, class_ in enumerate(day):
+                    if class_ is not None:
+                        class_.set_meeting_time(dayid, hourid)
+                        print(class_.meeting_time == MeetingTime(dayid, hourid))
+
+    def visualize_groups(self, file_name: str) -> None:
+        """
+        Check if file_name.xlsx already exists. If it does remove it and create a new empty one, otherwise create a new empty one.
+        Fill an excel spreadsheet with schedules for all student groups.
+        """
+        if os.path.exists(f"{file_name}.xlsx"):
+            os.remove(f"{file_name}.xlsx")
+            writer = pd.ExcelWriter(f"{file_name}.xlsx", engine="xlsxwriter")
+            workbook = writer.book
+            worksheet = workbook.add_worksheet("Arkusz_1")
+            worksheet.write(0, 0, " ")
+            writer.close()
+        else:
+            writer = pd.ExcelWriter(f"{file_name}.xlsx", engine="xlsxwriter")
+            workbook = writer.book
+            worksheet = workbook.add_worksheet("Arkusz_1")
+            worksheet.write(0, 0, " ")
+            writer.close()
+
+        for i, group_plan in enumerate(self.schedule):
+            df = pd.DataFrame(index=[0, 1, 2, 3, 4, 5], columns=[0, 1, 2, 3, 4])
+            for lecture in group_plan:
+                df[lecture.meeting_time.day][lecture.meeting_time.hour] = lecture.name
+            df.columns = ("Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek")
+            df.index = ("8-10", "10-12", "12-14", "14-16", "16-18", "18-20")
+            # dałem zapisanie do excela bo nie umiem zrobić żeby się ładnie wyświetalało xd
+            # jeśli zostajemy przy czymś takim, to można jakoś automatycznie formatować pliki by ładnie wyglądały
+            group = self.students[i]
+            with pd.ExcelWriter(
+                f"{file_name}.xlsx", mode="a", engine="openpyxl"
+            ) as writer:
+                df.to_excel(
+                    writer, sheet_name=f"{group.subject}_{group.semester}_{group.group}"
+                )
+
+
+"""
+Spotkanie 15.01:
+-- DONE Fitness w klasie Schedule 
+
+-- Osobna klasa do algorytmu genetycznego:
+    -- Mutacje (w obrębie całego planu tj. obiektu klasy Schedule): 
+        1. DONE Wybranie losowych "okienek" w planie i zamiana ich miejscami -- UWAGA NA WYKŁADY
+=======
 Spotkanie 15.01:
 -- Fitness w klasie Schedule 
 
 -- Osobna klasa do algorytmu genetycznego:
     -- Mutacje (w obrębie całego planu tj. obiektu klasy Schedule): 
         1. Wybranie losowych "okienek" w planie i zamiana ich miejscami -- UWAGA NA WYKŁADY
+>>>>>>> main
         2. Zamiana całych dni miejscami -- UWAGA NA WYKŁAD
         3. Zmiana miejsca i godziny jednych zajęć na losowy (inny pokój) w wolnym czasie 
         4. ...
@@ -352,6 +522,11 @@ Spotkanie 15.01:
         Zostawienie n najlepszych osobników
 
 -- Dokończenie wizualizacji danych
+<<<<<<< HEAD
+"""
+>>>>>>> Stashed changes
+=======
 
 """
 
+>>>>>>> main
