@@ -371,9 +371,10 @@ Spotkanie 15.01:
     -- Mutacje (w obrębie całego planu tj. obiektu klasy Schedule): 
         1. DONE Wybranie losowych "okienek" w planie i zamiana ich miejscami -- UWAGA NA WYKŁADY
         2. Zamiana całych dni miejscami -- UWAGA NA WYKŁAD
-        3. Zmiana miejsca i godziny jednych zajęć na losowy (inny pokój) w wolnym czasie 
+        3. DONE Zmiana miejsca i godziny jednych zajęć na losowy (inny pokój) w wolnym czasie 
         4. ...
     -- Crossovers (w obrębie dwóch obiektów klasy Schedule): 
+        0. DONE Z pierwszego rodzica bierzemy tylko część semestrów a zdrugiego reszt 
         1. Wybieramy zajęcia, zapamiętujemy miejsca w obu planach i zamieniamy te miejsca w obu planach
         2. Z pierwszego rodzica wybieramy losowo trochę zajęć i wpisujemy je do planu dziecka. Póżniej z planu drugiego rodzica wykreślamy wybrane już zajęcia a pozostałe umieszczamy losowo w planie dziecka.
     -- Selekcja:
