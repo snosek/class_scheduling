@@ -259,6 +259,12 @@ class Schedule:
                     this_course_students.append(student_group)
             self.classes += course.create_classes(this_course_students)
         self.number_of_conflicts = 0
+        self.number_of_early_hours = 0
+        self.number_of_late_hours = 0
+        self.number_of_free_days = 0
+        self.number_of_course_conflicts = 0
+        self.number_of_free_periods = 0
+        self.length_of_free_periods = 0
         self.fitness = -1
         self.schedule = []
 
@@ -322,6 +328,124 @@ class Schedule:
                 ) and class_1.meeting_time == class_2.meeting_time:
                     conflicts += 1
         self.number_of_conflicts = conflicts - len(self.classes)
+
+    def calculate_and_set_number_of_early_and_late_hours(self) -> None:
+        """
+        Calculate number of early and late hours (at 8-10 and 18-20) in this schedule.
+        Set those numbers as number_of_early_hours and number_of_late_hours attributes.
+        """
+        early_hours = 0
+        late_hours = 0
+
+        for class_ in self.classes:
+            if class_.meeting_time.hour == 0:
+                # wykład może być u kilku grup i dlatego jest tak jak niżej
+                early_hours += len(class_.student_groups)
+            elif class_.meeting_time.hour == 5:
+                late_hours += len(class_.student_groups)
+
+        self.number_of_early_hours = early_hours
+        self.number_of_late_hours = late_hours
+
+    def calculate_and_set_number_of_free_days(self) -> None:
+        """
+        Calculate number of free days for student groups in this schedule.
+        Set number_of_free_days attrubute as calculated value.
+        """
+        free_days = 0
+
+        for group_plan in self.schedule:
+            class_times = [[class_.meeting_time.day, class_.meeting_time.hour] for class_ in group_plan]
+
+            for day in [0,1,2,3,4]:
+                taken_hours = 0
+                for hour in [0,1,2,3,4,5]:
+                    if [day,hour] in class_times:
+                        taken_hours += 1
+                        break
+                if taken_hours == 0:
+                    free_days += 1
+        
+        self.number_of_free_days = free_days
+
+    def calculate_and_set_number_of_free_periods(self) -> None:
+        """
+        Calcualate number of free periods and their cumulative length.
+        Set those calculated values as appropriate attributes.
+        """
+        free_periods = 0
+        free_periods_length = 0
+
+        for group_plan in self.schedule:
+            class_times = [[class_.meeting_time.day, class_.meeting_time.hour] for class_ in group_plan]
+
+            for day in [0, 1, 2, 3, 4]:
+                hour = 0
+                while hour <= 5:
+                    if [day, hour] in class_times:
+                        this_period_length = 0
+                        this_period = 0
+                        for next_period_hour in range(hour+1, 6):
+                            if [day, next_period_hour] in class_times:
+                                if this_period_length != 0:
+                                    this_period += 1
+                                hour = next_period_hour-1
+                                break
+                            else:
+                                this_period_length +=1
+                                hour = next_period_hour-1
+                        if this_period == 1:
+                            free_periods += 1
+                            free_periods_length += this_period_length
+                    hour += 1
+        
+        self.number_of_free_periods = free_periods
+        self.length_of_free_periods = free_periods_length
+                
+    def calculate_and_set_number_of_course_conflicts(self):
+        """
+        Calculate number of practicals/laboratories/lectures within every course assigned to a specific group
+        that happen at the same day.
+        Set calculated vale as course_conflicts attribute.
+        --------
+        Within one course a student group shouldn't have two practicals at the same day.
+        It also applies to laboratories and lectures.
+        Although having laboratories and practicals and lecture in the same day is acceptable.
+        """
+        subject_conflicts = 0
+
+        for student_group in self.students:
+            for course in self.courses:
+                if student_group.subject == course.subject \
+                    and student_group.semester == course.semester:
+                    group_labs_from_subject = [class_ for class_ in self.schedule[student_group.id]
+                                                if (class_.course == course and class_.category == "laboratories")]
+                    group_practicals_from_subject = [class_ for class_ in self.schedule[student_group.id]
+                                                    if (class_.course == course and class_.category == "practicals")]
+
+                    N = len(group_labs_from_subject)
+                    for i in range(N):
+                        for j in range(i+1, N):
+                            if group_labs_from_subject[i].meeting_time.day == group_labs_from_subject[j].meeting_time.day:
+                                subject_conflicts += 1
+                    
+                    M = len(group_practicals_from_subject)
+                    for i in range(M):
+                        for j in range(i+1, M):
+                            if group_practicals_from_subject[i].meeting_time.day == group_practicals_from_subject[j].meeting_time.day:
+                                subject_conflicts += 1
+                
+                course_lectures = [class_ for class_ in self.classes 
+                                   if (class_.course == course and class_.category == "lecture")]
+                
+                K = len(course_lectures)
+                for i in range(K):
+                    for j in range(i+1, K):
+                        if course_lectures[i].meeting_time.day == course_lectures[j].meeting_time.day:
+                            subject_conflicts += 1
+
+        
+        self.number_of_course_conflicts = subject_conflicts
 
     def calculate_and_set_fitness(self):
         self.calculate_and_set_number_of_conflicts()
