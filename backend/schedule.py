@@ -171,7 +171,7 @@ class MeetingTime:
         possible_times = []
         for day in range(5):
             for hour in range(6):
-                possible_times.append([day, hour])
+                possible_times.append(MeetingTime(day, hour))
         return possible_times
 
     def __eq__(self, other) -> bool:
@@ -218,8 +218,8 @@ class Class:
     def set_professor(self, professor: Professor):
         self.instructor = professor
 
-    def set_meeting_time(self, day: int, hour: int):
-        self.meeting_time = MeetingTime(day, hour)
+    def set_meeting_time(self, meeting_time: MeetingTime):
+        self.meeting_time = meeting_time
 
     def set_room(self, room: Room):
         self.room = room
@@ -293,21 +293,17 @@ class Schedule:
             for item in group_lectures:
                 if item.meeting_time == None:
                     drawed_meeting_time = possible_times.pop()
-                    item.set_meeting_time(
-                        drawed_meeting_time[0], drawed_meeting_time[1]
-                    )
+                    item.set_meeting_time(drawed_meeting_time)
                     if item.category == "laboratories":
                         item.set_room(rand.choice(rooms_lab))
                     else:
                         item.set_room(rand.choice(rooms_normal))
                 else:
-                    possible_times.remove(
-                        [item.meeting_time.day, item.meeting_time.hour]
-                    )
+                    possible_times.remove(item.meeting_time)
                 temp.append(item)
             for item in group_classes:
                 drawed_meeting_time = possible_times.pop()
-                item.set_meeting_time(drawed_meeting_time[0], drawed_meeting_time[1])
+                item.set_meeting_time(drawed_meeting_time)
                 if item.category == "laboratories":
                     item.set_room(rand.choice(rooms_lab))
                 else:
@@ -320,12 +316,12 @@ class Schedule:
         Calculate number of conflicts in this schedule. Set number_of_conflicts attribute as calculated value.
         """
         conflicts = 0
-        for class_1 in self.classes:
-            for class_2 in self.classes:
+        for i, class_1 in enumerate(self.classes):
+            for j in range(i+1, len(self.classes)):
                 if (
-                    class_1.professor == class_2.professor
-                    or class_1.room == class_2.room
-                ) and class_1.meeting_time == class_2.meeting_time:
+                    class_1.professor == self.classes[j].professor
+                    or class_1.room == self.classes[j].room
+                ) and class_1.meeting_time == self.classes[j].meeting_time:
                     conflicts += 1
         self.number_of_conflicts = conflicts - len(self.classes)
 
