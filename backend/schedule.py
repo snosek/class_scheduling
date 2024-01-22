@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import random as rand
+import numpy as np
 
 
 class Professor:
@@ -323,7 +324,7 @@ class Schedule:
                     or class_1.room == self.classes[j].room
                 ) and class_1.meeting_time == self.classes[j].meeting_time:
                     conflicts += 1
-        self.number_of_conflicts = conflicts - len(self.classes)
+        self.number_of_conflicts = conflicts #- len(self.classes)
 
     def calculate_and_set_number_of_early_and_late_hours(self) -> None:
         """
@@ -449,32 +450,37 @@ class Schedule:
 
     def visualize_rooms(self, file_name: str) -> None:
         """
-       
+        Check if file_name.xlsx already exists. If it does remove it and create a new empty one, otherwise create a new empty one.
+        Fill this spreadsheet with schedules for each room.
         """
-        if os.path.exists(f"{file_name}_rooms.xlsx"):
-            os.remove(f"{file_name}_rooms.xlsx")
-            writer = pd.ExcelWriter(f"{file_name}_rooms.xlsx", engine="xlsxwriter")
+        if os.path.exists(f"{file_name}.xlsx"):
+            os.remove(f"{file_name}.xlsx")
+            writer = pd.ExcelWriter(f"{file_name}.xlsx", engine="xlsxwriter")
             workbook = writer.book
             worksheet = workbook.add_worksheet("Arkusz_1")
             worksheet.write(0, 0, " ")
             writer.close()
         else:
-            writer = pd.ExcelWriter(f"{file_name}_rooms.xlsx", engine="xlsxwriter")
+            writer = pd.ExcelWriter(f"{file_name}.xlsx", engine="xlsxwriter")
             workbook = writer.book
             worksheet = workbook.add_worksheet("Arkusz_1")
             worksheet.write(0, 0, " ")
             writer.close()
 
-        for i, room in enumerate(self.rooms):
+        for room in self.rooms:
             df = pd.DataFrame(index=[0, 1, 2, 3, 4, 5], columns=[0, 1, 2, 3, 4])
             for class_ in self.classes:
                 if class_.room == room:
-                    df[class_.meeting_time.day][class_.meeting_time.hour] = class_.name
+                    if type(df[class_.meeting_time.day][class_.meeting_time.hour]) is not str:
+                        df[class_.meeting_time.day][class_.meeting_time.hour] = class_.name
+                    else:
+                        df[class_.meeting_time.day][class_.meeting_time.hour] = \
+                            f"{df[class_.meeting_time.day][class_.meeting_time.hour]}, {class_.name}"
             df.columns = ("Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek")
             df.index = ("8-10", "10-12", "12-14", "14-16", "16-18", "18-20")
-            # Zapis do arkusza kalkulacyjnego
+
             with pd.ExcelWriter(
-                f"{file_name}_rooms.xlsx", mode="a", engine="openpyxl"
+                f"{file_name}.xlsx", mode="a", engine="openpyxl"
             ) as writer:
                 df.to_excel(writer, sheet_name=f"{room.name}_{room.category}")
 
@@ -483,7 +489,7 @@ class Schedule:
     def visualize_groups(self, file_name: str) -> None:
         """
         Check if file_name.xlsx already exists. If it does remove it and create a new empty one, otherwise create a new empty one.
-        Fill an excel spreadsheet with schedules for all student groups.
+        Fill this excel spreadsheet with schedules for all student groups.
         """
         if os.path.exists(f"{file_name}.xlsx"):
             os.remove(f"{file_name}.xlsx")
@@ -505,8 +511,6 @@ class Schedule:
                 df[lecture.meeting_time.day][lecture.meeting_time.hour] = lecture.name
             df.columns = ("Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek")
             df.index = ("8-10", "10-12", "12-14", "14-16", "16-18", "18-20")
-            # dałem zapisanie do excela bo nie umiem zrobić żeby się ładnie wyświetalało xd
-            # jeśli zostajemy przy czymś takim, to można jakoś automatycznie formatować pliki by ładnie wyglądały
             group = self.students[i]
             with pd.ExcelWriter(
                 f"{file_name}.xlsx", mode="a", engine="openpyxl"
@@ -517,7 +521,8 @@ class Schedule:
 
     def visualize_professors(self, file_name: str) -> None:
         """
-        
+        Check if file_name.xlsx already exists. If it does remove it and create a new empty one, otherwise create a new empty one.
+        Fill this excel spreadsheet whith schedules for each professor.
         """
         if os.path.exists(f"{file_name}.xlsx"):
             os.remove(f"{file_name}.xlsx")
@@ -533,11 +538,15 @@ class Schedule:
             worksheet.write(0, 0, " ")
             writer.close()
 
-        for i, professor in enumerate(self.professors):
+        for professor in self.professors:
             professor_schedule = [class_ for class_ in self.classes if class_.professor == professor]
             df = pd.DataFrame(index=[0, 1, 2, 3, 4, 5], columns=[0, 1, 2, 3, 4])
             for lecture in professor_schedule:
-                df[lecture.meeting_time.day][lecture.meeting_time.hour] = lecture.name
+                if type(df[lecture.meeting_time.day][lecture.meeting_time.hour]) is not str:
+                    df[lecture.meeting_time.day][lecture.meeting_time.hour] = lecture.name
+                else:
+                    df[lecture.meeting_time.day][lecture.meeting_time.hour] = \
+                        f"{df[lecture.meeting_time.day][lecture.meeting_time.hour]}, {lecture.name}"
             df.columns = ("Poniedziałek", "Wtorek", "Środa", "Czwartek", "Piątek")
             df.index = ("8-10", "10-12", "12-14", "14-16", "16-18", "18-20")
             
@@ -545,8 +554,7 @@ class Schedule:
                 f"{file_name}.xlsx", mode="a", engine="openpyxl"
             ) as writer:
                 df.to_excel(
-                    writer, sheet_name=f"{professor.name}_{i + 1}"
-                )
+                    writer, sheet_name=f"{professor.name}")
 
 
 """
