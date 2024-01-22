@@ -482,7 +482,8 @@ class Schedule:
 
     def visualize_groups(self, file_name: str) -> None:
         """
-        
+        Check if file_name.xlsx already exists. If it does remove it and create a new empty one, otherwise create a new empty one.
+        Fill an excel spreadsheet with schedules for all student groups.
         """
         if os.path.exists(f"{file_name}.xlsx"):
             os.remove(f"{file_name}.xlsx")
@@ -565,5 +566,17 @@ Spotkanie 15.01:
     -- Selekcja:
         DONE Zostawienie n najlepszych osobników
 
--- Dokończenie wizualizacji danych
+-- DONE Dokończenie wizualizacji danych
+"""
+
+"""
+Spotkanie 22.01:
+-- Dodanie kolejnej funkcji fitness i aktualizacja sortowania
+    -- Wygenerowanie najlepszego planu
+
+-- Przygotowanie pliku do prezentacji:
+    -- prezentacja wszytkich metod i klas
+
+-- Poprawienie jakości wizualizacji (szerokość kolumn)
+    
 """
