@@ -267,6 +267,7 @@ class Schedule:
         self.number_of_free_periods = 0
         self.length_of_free_periods = 0
         self.fitness = -1
+        self.soft_fitness = -1
         self.schedule = []
 
 
@@ -448,6 +449,21 @@ class Schedule:
         self.calculate_and_set_number_of_conflicts()
         self.fitness = 1.0 / (self.number_of_conflicts + 1)
 
+    def calculate_and_set_soft_fitness(self):
+        self.calculate_and_set_number_of_course_conflicts()
+        self.calculate_and_set_number_of_early_and_late_hours()
+        self.calculate_and_set_number_of_free_days()
+        self.calculate_and_set_number_of_free_periods()
+        # jest number_of_free_days + 1, coby nie wykluczało od razu planów z żadnymi dni wolnymi, a potencjalnie zajebistymi innymi parametrami
+        # wydaje mi się, że taki soft_fitness wystarczy, zależy nam i tak na zmaksymalizowaniu go, a nie osiągnięciu jakiegoś pułapu, jak w przypadku zwykłęgo fitnessu
+        self.soft_fitness = (
+            (self.number_of_free_days + 1)/
+            (self.number_of_early_hours +
+             self.number_of_late_hours +
+             self.number_of_course_conflicts +
+             self.length_of_free_periods)
+        )
+
     def visualize_rooms(self, file_name: str) -> None:
         """
         Check if file_name.xlsx already exists. If it does remove it and create a new empty one, otherwise create a new empty one.
@@ -483,8 +499,6 @@ class Schedule:
                 f"{file_name}.xlsx", mode="a", engine="openpyxl"
             ) as writer:
                 df.to_excel(writer, sheet_name=f"{room.name}_{room.category}")
-
-
 
     def visualize_groups(self, file_name: str) -> None:
         """

@@ -1,5 +1,6 @@
 from backend.schedule import *
 from copy import copy, deepcopy
+from operator import attrgetter
 
 
 class Population:
@@ -34,7 +35,8 @@ class Population:
         for schedule in self.population:
             schedule.random_schedule()
         self.set_and_get_fitnesses()
-        self.population = self.sort_by_fitness(self.population)
+        self.set_and_get_soft_fitnesses()
+        self.population = self.sort_by_fitness_and_soft_fitness(self.population)
 
     def set_and_get_fitnesses(self):
         """
@@ -45,6 +47,25 @@ class Population:
             schedule.calculate_and_set_fitness()
             res += [schedule.fitness]
         return res
+    
+    def set_and_get_soft_fitnesses(self):
+        """
+        Returns a list of specimen soft fitness values.
+        """
+        res = []
+        for schedule in self.population:
+            schedule.calculate_and_set_soft_fitness()
+            res += [schedule.soft_fitness]
+        return res
+    
+    def sort_by_fitness(self, schedules: list[Schedule]) -> list[Schedule]:
+        self.set_and_get_fitnesses()
+        return sorted(schedules, key = lambda x: x.fitness, reverse = True)
+    
+    def sort_by_fitness_and_soft_fitness(self, schedules: list[Schedule]) -> list[Schedule]:
+        self.set_and_get_fitnesses()
+        self.set_and_get_soft_fitnesses()
+        return sorted(schedules, key = attrgetter("fitness", "soft_fitness"), reverse = True)
 
     def mutation_swap_classes(self, schedules: list[Schedule]):
         """
@@ -52,7 +73,7 @@ class Population:
         """
         for schedule in schedules:
             if rand.random() < self.mutation_probability:
-                for _ in range(rand.randint(0, self.number_of_swaps)):
+                for _ in range(self.number_of_swaps):
                     drawed_student_group = rand.choice(self.students)
                     possible_times = MeetingTime.generate_possible_times()
                     rand.shuffle(possible_times)
@@ -103,23 +124,38 @@ class Population:
     def mutation_swap_rooms(self, schedules: list[Schedule]):
         for schedule in schedules:
             if rand.random() < self.mutation_probability:
-                drawed_class = rand.choice(schedule.classes)
-                if drawed_class.category == "laboratories":
-                    suitable_rooms = [
-                        room for room in schedule.rooms
-                        if room.category == "laboratories"
-                    ]
-                else:
-                    suitable_rooms = [
-                        room for room in schedule.rooms
-                        if room.category == "normal"
-                    ]
-                drawed_class.set_room(rand.choice(suitable_rooms))
+                for _ in range(self.number_of_swaps):
+                    drawed_class = rand.choice(schedule.classes)
+                    if drawed_class.category == "laboratories":
+                        suitable_rooms = [
+                            room for room in schedule.rooms
+                            if room.category == "laboratories"
+                        ]
+                    else:
+                        suitable_rooms = [
+                            room for room in schedule.rooms
+                            if room.category == "normal"
+                        ]
+                    drawed_class.set_room(rand.choice(suitable_rooms))
     
     def crossover_swap_semesters(self, parents: list[Schedule]) -> list[Schedule]:
         """
         Parents should be a list of length two. Return a list of length 2.
         """
+        # randomly select semesters
+        all_semesters = list(set([group.semester for group in self.students])) 
+        semesters1 = rand.sample(all_semesters, 3)
+        semesters2 = [sem for sem in all_semesters if sem not in semesters1]
+        student_groups1 = [group.id for group in self.students if group.semester in semesters1]
+        student_groups2 = [group.id for group in self.students if group.semester in semesters2]
+        children = deepcopy(parents)
+        for group1, group2 in zip(student_groups1, student_groups2):
+            children[0].schedule[group1] = parents[0].schedule[group1]
+            children[0].schedule[group2] = parents[0].schedule[group2]
+            children[1].schedule[group1] = parents[1].schedule[group1]
+            children[1].schedule[group2] = parents[1].schedule[group2]
+        return children
+            
         # randomly select a cutoff point for semesters
         semester_cutoff = rand.randint(1, len(set([group.semester for group in self.students])) - 1)
         cutoff_point = []
@@ -131,13 +167,9 @@ class Population:
         children[1].schedule = parents[1].schedule[:cutoff_point] + parents[0].schedule[cutoff_point:]
         return children
 
-    def sort_by_fitness(self, schedules: list[Schedule]) -> list[Schedule]:
-        self.set_and_get_fitnesses()
-        return sorted(schedules, key = lambda x: x.fitness, reverse = True)
-
     def genetic_cycle(self):
         # elitism
-        new_population = copy(self.population[:self.number_of_elites])
+        new_population = deepcopy(self.population[:self.number_of_elites])
         # crossover
         possible_parents = [*range(0, self.number_of_pairs * 2)]
         rand.shuffle(possible_parents)
@@ -152,10 +184,10 @@ class Population:
         self.mutation_swap_rooms(self.population)
 
         new_population += self.population
-        new_population = self.sort_by_fitness(new_population)[0:self.population_size]
+        new_population = self.sort_by_fitness_and_soft_fitness(new_population)[0:self.population_size]
         self.population = new_population
     
     def execute(self, number_of_cycles: int):
-        self.population = self.sort_by_fitness(self.population)
+        self.population = self.sort_by_fitness_and_soft_fitness(self.population)
         for j in range(number_of_cycles):
             self.genetic_cycle()
