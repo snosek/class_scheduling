@@ -335,12 +335,12 @@ class Schedule:
         early_hours = 0
         late_hours = 0
 
-        for class_ in self.classes:
-            if class_.meeting_time.hour == 0:
-                # wykład może być u kilku grup i dlatego jest tak jak niżej
-                early_hours += len(class_.student_groups)
-            elif class_.meeting_time.hour == 5:
-                late_hours += len(class_.student_groups)
+        for group_plan in self.schedule:
+            early_classes = [class_ for class_ in group_plan if class_.meeting_time.hour == 0]
+            late_classes = [class_ for class_ in group_plan if class_.meeting_time.hour == 5]
+            
+            early_hours += len(early_classes)
+            late_hours+=len(late_classes)
 
         self.number_of_early_hours = early_hours
         self.number_of_late_hours = late_hours
@@ -413,36 +413,39 @@ class Schedule:
         subject_conflicts = 0
 
         for student_group in self.students:
-            for course in self.courses:
-                if student_group.subject == course.subject \
-                    and student_group.semester == course.semester:
-                    group_labs_from_subject = [class_ for class_ in self.schedule[student_group.id]
-                                                if (class_.course == course and class_.category == "laboratories")]
-                    group_practicals_from_subject = [class_ for class_ in self.schedule[student_group.id]
-                                                    if (class_.course == course and class_.category == "practicals")]
+                for course in self.courses:
+                    if (student_group.subject == course.subject and student_group.semester == course.semester):
+                        group_labs_from_subject = [class_ for class_ in self.classes
+                                                    if (class_.course == course 
+                                                        and class_.category == "laboratories"
+                                                        and student_group in class_.student_groups)]
+                        group_practicals_from_subject = [class_ for class_ in self.classes
+                                                        if (class_.course == course 
+                                                            and class_.category == "practicals"
+                                                            and student_group in class_.student_groups)]
+                        group_course_lectures = [class_ for class_ in self.classes 
+                                                if (class_.course == course 
+                                                    and class_.category == "lecture"
+                                                    and student_group in class_.student_groups)]
+                        
+                        N = len(group_labs_from_subject)
+                        for i in range(N):
+                            for j in range(i+1, N):
+                                if group_labs_from_subject[i].meeting_time.day == group_labs_from_subject[j].meeting_time.day:
+                                    subject_conflicts += 1
+                        
+                        M = len(group_practicals_from_subject)
+                        for i in range(M):
+                            for j in range(i+1, M):
+                                if group_practicals_from_subject[i].meeting_time.day == group_practicals_from_subject[j].meeting_time.day:
+                                    subject_conflicts += 1
 
-                    N = len(group_labs_from_subject)
-                    for i in range(N):
-                        for j in range(i+1, N):
-                            if group_labs_from_subject[i].meeting_time.day == group_labs_from_subject[j].meeting_time.day:
-                                subject_conflicts += 1
-                    
-                    M = len(group_practicals_from_subject)
-                    for i in range(M):
-                        for j in range(i+1, M):
-                            if group_practicals_from_subject[i].meeting_time.day == group_practicals_from_subject[j].meeting_time.day:
-                                subject_conflicts += 1
-                
-                course_lectures = [class_ for class_ in self.classes 
-                                   if (class_.course == course and class_.category == "lecture")]
-                
-                K = len(course_lectures)
-                for i in range(K):
-                    for j in range(i+1, K):
-                        if course_lectures[i].meeting_time.day == course_lectures[j].meeting_time.day:
-                            subject_conflicts += 1
+                        K = len(group_course_lectures)
+                        for i in range(K):
+                            for j in range(i+1, K):
+                                if group_course_lectures[i].meeting_time.day == group_course_lectures[j].meeting_time.day:
+                                    subject_conflicts += 1
 
-        
         self.number_of_course_conflicts = subject_conflicts
 
     def calculate_and_set_fitness(self):
