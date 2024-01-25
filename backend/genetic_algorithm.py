@@ -2,7 +2,6 @@ from backend.schedule import *
 from copy import copy, deepcopy
 from operator import attrgetter
 
-
 class Population:
     def __init__(
         self,
@@ -14,7 +13,8 @@ class Population:
         mutation_probability: float,
         number_of_elites: int,
         number_of_pairs: int,
-        number_of_swaps: int
+        number_of_class_swaps: int,
+        number_of_room_swaps: int
     ):
         """
         Generates a population of specified size. Each speciman is a Schedule object with provided data.
@@ -23,7 +23,8 @@ class Population:
         self.mutation_probability = mutation_probability
         self.number_of_elites = number_of_elites
         self.number_of_pairs = number_of_pairs
-        self.number_of_swaps = number_of_swaps
+        self.number_of_class_swaps = number_of_class_swaps
+        self.number_of_room_swaps = number_of_room_swaps
         self.professors = professors
         self.courses = courses
         self.rooms = rooms
@@ -73,7 +74,7 @@ class Population:
         """
         for schedule in schedules:
             if rand.random() < self.mutation_probability:
-                for _ in range(self.number_of_swaps):
+                for _ in range(self.number_of_class_swaps):
                     drawed_student_group = rand.choice(self.students)
                     possible_times = MeetingTime.generate_possible_times()
                     rand.shuffle(possible_times)
@@ -124,7 +125,7 @@ class Population:
     def mutation_swap_rooms(self, schedules: list[Schedule]):
         for schedule in schedules:
             if rand.random() < self.mutation_probability:
-                for _ in range(self.number_of_swaps):
+                for _ in range(self.number_of_room_swaps):
                     drawed_class = rand.choice(schedule.classes)
                     if drawed_class.category == "laboratories":
                         suitable_rooms = [
