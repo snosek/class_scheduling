@@ -3,7 +3,6 @@ import pandas as pd
 import random as rand
 import numpy as np
 
-
 class Professor:
     def __init__(self, id: int, name: str):
         self.id = id
