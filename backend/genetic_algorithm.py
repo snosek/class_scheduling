@@ -1,6 +1,7 @@
 from backend.schedule import *
 from copy import copy, deepcopy
 from operator import attrgetter
+from math import floor
 
 class Population:
     def __init__(
@@ -11,8 +12,8 @@ class Population:
         rooms: list[Room],
         students: list[Students],
         mutation_probability: float,
-        number_of_elites: int,
-        number_of_pairs: int,
+        elitism_percentage: float,
+        mating_percentage: float,
         number_of_class_swaps: int,
         number_of_room_swaps: int
     ):
@@ -21,8 +22,8 @@ class Population:
         """
         self.population_size = population_size
         self.mutation_probability = mutation_probability
-        self.number_of_elites = number_of_elites
-        self.number_of_pairs = number_of_pairs
+        self.number_of_elites = floor(population_size * elitism_percentage)
+        self.number_of_pairs = floor(population_size // 2 * mating_percentage)
         self.number_of_class_swaps = number_of_class_swaps
         self.number_of_room_swaps = number_of_room_swaps
         self.professors = professors
@@ -35,8 +36,6 @@ class Population:
         ]
         for schedule in self.population:
             schedule.random_schedule()
-        self.set_and_get_fitnesses()
-        self.set_and_get_soft_fitnesses()
         self.population = self.sort_by_fitness_and_soft_fitness(self.population)
 
     def set_and_get_fitnesses(self):
@@ -76,9 +75,14 @@ class Population:
             if rand.random() < self.mutation_probability:
                 for _ in range(self.number_of_class_swaps):
                     drawed_student_group = rand.choice(self.students)
-                    possible_times = MeetingTime.generate_possible_times()
-                    rand.shuffle(possible_times)
-                    time1, time2 = possible_times.pop(), possible_times.pop()
+                    time1 = MeetingTime(rand.randint(0,4), rand.randint(0,5))
+                    time2 = MeetingTime(rand.randint(0,4), rand.randint(0,5))
+                    while time1.__eq__(time2):
+                        time1 = MeetingTime(rand.randint(0,4), rand.randint(0,5))
+                        time2 = MeetingTime(rand.randint(0,4), rand.randint(0,5))
+                    #possible_times = MeetingTime.generate_possible_times()
+                    #rand.shuffle(possible_times)
+                    #time1, time2 = possible_times.pop(), possible_times.pop()
                     drawed_classes = []
                     # trzyma wylosowane zajecia w formie [zajecia_czas1, zajecia_czas2], jeśli nie ma wylosowanych zajęć to nic nie trzyma
                     for time in [time1, time2]:
@@ -138,7 +142,7 @@ class Population:
                             if room.category == "normal"
                         ]
                     drawed_class.set_room(rand.choice(suitable_rooms))
-    
+
     def crossover_swap_semesters(self, parents: list[Schedule]) -> list[Schedule]:
         """
         Parents should be a list of length two. Return a list of length 2.
@@ -149,31 +153,38 @@ class Population:
         semesters2 = [sem for sem in all_semesters if sem not in semesters1]
         student_groups1 = [group.id for group in self.students if group.semester in semesters1]
         student_groups2 = [group.id for group in self.students if group.semester in semesters2]
-        children = deepcopy(parents)
-        for group1, group2 in zip(student_groups1, student_groups2):
+        parents = deepcopy(parents)
+        children = parents
+        for group1 in student_groups1:
             children[0].schedule[group1] = parents[0].schedule[group1]
-            children[0].schedule[group2] = parents[0].schedule[group2]
             children[1].schedule[group1] = parents[1].schedule[group1]
+        for group2 in student_groups2:
+            children[0].schedule[group2] = parents[0].schedule[group2]
             children[1].schedule[group2] = parents[1].schedule[group2]
+        for child in children:
+            child.update_classes_from_schedule()
         return children
             
-        # randomly select a cutoff point for semesters
-        semester_cutoff = rand.randint(1, len(set([group.semester for group in self.students])) - 1)
-        cutoff_point = []
-        for semester in range(semester_cutoff):
-            cutoff_point += [1 for group in self.students if group.semester == semester + 1]
-        cutoff_point = sum(cutoff_point)
-        children = deepcopy(parents)
-        children[0].schedule = parents[0].schedule[:cutoff_point] + parents[1].schedule[cutoff_point:]
-        children[1].schedule = parents[1].schedule[:cutoff_point] + parents[0].schedule[cutoff_point:]
-        return children
+    def draw_possible_parents(self) -> list[int]:
+        """
+        Generates a list of possible parent population ids. It does so by random weighted sampling.
+        """
+        fitness_sum = sum([x.fitness for x in self.population])
+        possible_parents = list(
+            np.random.choice(
+                [*range(self.population_size)],
+                size = self.number_of_pairs * 2,
+                replace = False,
+                p = [x.fitness/fitness_sum for x in self.population]
+            )
+        )
+        return possible_parents
 
     def genetic_cycle(self):
         # elitism
         new_population = deepcopy(self.population[:self.number_of_elites])
         # crossover
-        possible_parents = [*range(0, self.number_of_pairs * 2)]
-        rand.shuffle(possible_parents)
+        possible_parents = self.draw_possible_parents()
         for i in range(self.number_of_pairs):
             drawed_parents = [possible_parents.pop(), possible_parents.pop()]
             parents = [self.population[drawed_parents[0]], self.population[drawed_parents[1]]]
@@ -189,6 +200,5 @@ class Population:
         self.population = new_population
     
     def execute(self, number_of_cycles: int):
-        self.population = self.sort_by_fitness_and_soft_fitness(self.population)
         for j in range(number_of_cycles):
             self.genetic_cycle()

@@ -7,8 +7,6 @@ class Professor:
     def __init__(self, id: int, name: str):
         self.id = id
         self.name = name
-        self.preferences = None
-        self.class_assignment = None
 
     def __str__(self):
         return self.name
@@ -20,7 +18,6 @@ class Students:
         self.semester = semester
         self.group = group
         self.subject = subject
-        self.class_assignment = []
 
     def __str__(self):
         return f"Kierunek {self.subject} Semestr {self.semester} Grupa {self.group}"
@@ -265,6 +262,7 @@ class Schedule:
         self.number_of_course_conflicts = 0
         self.number_of_free_periods = 0
         self.length_of_free_periods = 0
+        self.number_of_days_with_one_class = 0
         self.fitness = -1
         self.soft_fitness = -1
         self.schedule = []
@@ -312,6 +310,17 @@ class Schedule:
                 temp.append(item)
             self.schedule.append(temp)
 
+    def update_classes_from_schedule(self): 
+        for identificator, group_schedule in enumerate(self.schedule):
+            this_groups_classes = [
+                    class_ for class_ in self.classes 
+                    if identificator in [group.id for group in class_.student_groups]
+                ]
+            for schedule_class in group_schedule:
+                for classes_class in this_groups_classes:
+                    if schedule_class.name == classes_class.name:
+                        classes_class = schedule_class
+
     def calculate_and_set_number_of_conflicts(self) -> None:
         """
         Calculate number of conflicts in this schedule. Set number_of_conflicts attribute as calculated value.
@@ -320,9 +329,9 @@ class Schedule:
         for i, class_1 in enumerate(self.classes):
             for j in range(i+1, len(self.classes)):
                 if (
-                    class_1.professor == self.classes[j].professor
-                    or class_1.room == self.classes[j].room
-                ) and class_1.meeting_time == self.classes[j].meeting_time:
+                    (class_1.professor == self.classes[j].professor or class_1.room == self.classes[j].room) 
+                    and class_1.meeting_time == self.classes[j].meeting_time
+                ):
                     conflicts += 1
         self.number_of_conflicts = conflicts #- len(self.classes)
 
@@ -354,9 +363,9 @@ class Schedule:
         for group_plan in self.schedule:
             class_times = [[class_.meeting_time.day, class_.meeting_time.hour] for class_ in group_plan]
 
-            for day in [0,1,2,3,4]:
+            for day in range(5):
                 taken_hours = 0
-                for hour in [0,1,2,3,4,5]:
+                for hour in range(6):
                     if [day,hour] in class_times:
                         taken_hours += 1
                         break
@@ -376,7 +385,7 @@ class Schedule:
         for group_plan in self.schedule:
             class_times = [[class_.meeting_time.day, class_.meeting_time.hour] for class_ in group_plan]
 
-            for day in [0, 1, 2, 3, 4]:
+            for day in range(5):
                 hour = 0
                 while hour <= 5:
                     if [day, hour] in class_times:
@@ -414,18 +423,30 @@ class Schedule:
         for student_group in self.students:
                 for course in self.courses:
                     if (student_group.subject == course.subject and student_group.semester == course.semester):
-                        group_labs_from_subject = [class_ for class_ in self.classes
-                                                    if (class_.course == course 
-                                                        and class_.category == "laboratories"
-                                                        and student_group in class_.student_groups)]
-                        group_practicals_from_subject = [class_ for class_ in self.classes
-                                                        if (class_.course == course 
-                                                            and class_.category == "practicals"
-                                                            and student_group in class_.student_groups)]
-                        group_course_lectures = [class_ for class_ in self.classes 
-                                                if (class_.course == course 
-                                                    and class_.category == "lecture"
-                                                    and student_group in class_.student_groups)]
+                        group_labs_from_subject = [
+                            class_ for class_ in self.classes
+                            if (
+                                class_.course == course 
+                                and class_.category == "laboratories"
+                                and student_group in class_.student_groups
+                            )
+                        ]
+                        group_practicals_from_subject = [
+                            class_ for class_ in self.classes
+                            if (
+                                class_.course == course 
+                                and class_.category == "practicals"
+                                and student_group in class_.student_groups
+                            )
+                        ]
+                        group_course_lectures = [
+                            class_ for class_ in self.classes 
+                            if (
+                                class_.course == course 
+                                and class_.category == "lecture"
+                                and student_group in class_.student_groups
+                            )
+                        ]
                         
                         N = len(group_labs_from_subject)
                         for i in range(N):
@@ -447,6 +468,15 @@ class Schedule:
 
         self.number_of_course_conflicts = subject_conflicts
 
+    def calculate_and_set_number_of_days_with_one_class(self):
+        number_of_days_with_one_class = 0
+        for group_schedule in self.schedule:
+            for day in range(5):
+                classes_in_this_day = [class_ for class_ in group_schedule if class_.meeting_time.day == day]
+                if len(classes_in_this_day) == 1:
+                    number_of_days_with_one_class += 1
+        self.number_of_days_with_one_class = number_of_days_with_one_class
+
     def calculate_and_set_fitness(self):
         self.calculate_and_set_number_of_conflicts()
         self.fitness = 1.0 / (self.number_of_conflicts + 1)
@@ -456,6 +486,7 @@ class Schedule:
         self.calculate_and_set_number_of_early_and_late_hours()
         self.calculate_and_set_number_of_free_days()
         self.calculate_and_set_number_of_free_periods()
+        self.calculate_and_set_number_of_days_with_one_class()
         # jest number_of_free_days + 1, coby nie wykluczało od razu planów z żadnymi dni wolnymi, a potencjalnie zajebistymi innymi parametrami
         # wydaje mi się, że taki soft_fitness wystarczy, zależy nam i tak na zmaksymalizowaniu go, a nie osiągnięciu jakiegoś pułapu, jak w przypadku zwykłęgo fitnessu
         self.soft_fitness = (
@@ -463,7 +494,9 @@ class Schedule:
             (self.number_of_early_hours +
              self.number_of_late_hours +
              self.number_of_course_conflicts +
-             self.length_of_free_periods)
+             self.length_of_free_periods +
+             self.number_of_days_with_one_class +
+             1)
         )
 
     def visualize_rooms(self, file_name: str) -> None:
